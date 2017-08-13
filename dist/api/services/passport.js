@@ -203,7 +203,7 @@ if (sails.services.passport) {
    * @param {Function} next
    */
   passport.callback = function (req, res, next) {
-    var provider = req.param('provider', 'local');
+    var provider = req.param('provider') || 'local';
     var action = req.param('action');
 
     // Passport.js wasn't really built for local user registration, but it's nice
@@ -329,7 +329,7 @@ if (sails.services.passport) {
       provider: provider,
       user: user.id
     }).then(function (passport) {
-      return sails.models.passport.destroy(passport.id);
+      return sails.models.passport.destroy({ id: passport.id });
     }).then(function (error) {
       next(null, user);
       return user;

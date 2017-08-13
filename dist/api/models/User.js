@@ -4,35 +4,23 @@ var _ = require('lodash');
 var crypto = require('crypto');
 
 /** @module User */
-module.exports = {
+
+var User = {
   attributes: {
     username: {
       type: 'string',
       unique: true,
-      index: true,
-      notNull: true
+      required: true
     },
     email: {
-      type: 'email',
+      type: 'string',
+      regex: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
       unique: true,
-      index: true
+      required: true
     },
     passports: {
       collection: 'Passport',
       via: 'user'
-    },
-
-    getGravatarUrl: function getGravatarUrl() {
-      var md5 = crypto.createHash('md5');
-      md5.update(this.email || '');
-      return 'https://gravatar.com/avatar/' + md5.digest('hex');
-    },
-
-    toJSON: function toJSON() {
-      var user = this.toObject();
-      delete user.password;
-      user.gravatarUrl = this.getGravatarUrl();
-      return user;
     }
   },
 
@@ -54,5 +42,19 @@ module.exports = {
         resolve(created);
       });
     });
+  },
+
+  getGravatarUrl: function getGravatarUrl(user) {
+    var md5 = crypto.createHash('md5');
+    md5.update(user.email || '');
+    return 'https://gravatar.com/avatar/' + md5.digest('hex');
+  },
+
+  customToJSON: function customToJSON() {
+    var user = _.omit(this, ['password']);
+    user.gravatarUrl = User.getGravatarUrl(user);
+    return user;
   }
 };
+
+module.exports = User;

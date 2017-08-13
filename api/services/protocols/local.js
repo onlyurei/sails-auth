@@ -50,7 +50,7 @@ exports.createUser = function (_user, next) {
       if (err.code === 'E_VALIDATION') {
         return next(new SAError({originalError: err}));
       }
-      
+
       return next(err);
     }
 
@@ -64,8 +64,8 @@ exports.createUser = function (_user, next) {
         if (err.code === 'E_VALIDATION') {
           err = new SAError({originalError: err});
         }
-        
-        return user.destroy(function (destroyErr) {
+
+        return sails.models.user.destroy({ id: user.id }).exec(function (destroyErr) {
           next(destroyErr || err);
         });
       }
@@ -198,13 +198,13 @@ exports.login = function (req, identifier, password, next) {
     }
 
     if (!user) {
+      error = { statusCode: 401 }
       if (isEmail) {
-        req.flash('error', 'Error.Passport.Email.NotFound');
+        error.message = 'Error.Passport.Email.NotFound'
       } else {
-        req.flash('error', 'Error.Passport.Username.NotFound');
+        error.message = 'Error.Passport.Username.NotFound'
       }
-
-      return next(null, false);
+      return next(error, false);
     }
 
     sails.models.passport.findOne({
@@ -212,22 +212,20 @@ exports.login = function (req, identifier, password, next) {
     , user     : user.id
     }, function (err, passport) {
       if (passport) {
-        passport.validatePassword(password, function (err, res) {
+        Passport.validatePassword(password, passport, function (err, res) {
           if (err) {
             return next(err);
           }
 
           if (!res) {
-            req.flash('error', 'Error.Passport.Password.Wrong');
-            return next(null, false);
+            return next({ statusCode: 401, message: 'Error.Passport.Password.Wrong' }, false);
           } else {
             return next(null, user, passport);
           }
         });
       }
       else {
-        req.flash('error', 'Error.Passport.Password.NotSet');
-        return next(null, false);
+        return next({ statusCode: 401, message: 'Error.Passport.Password.NotSet' }, false);
       }
     });
   });
