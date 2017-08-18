@@ -197,7 +197,7 @@ exports.login = function (req, identifier, password, next) {
     }
 
     if (!user) {
-      error = { statusCode: 401 };
+      var error = { statusCode: 401 };
       if (isEmail) {
         error.message = 'Error.Passport.Email.NotFound';
       } else {
