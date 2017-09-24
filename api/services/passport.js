@@ -104,9 +104,9 @@ if (sails.services.passport) {
     }
 
     sails.models.passport.findOne({
-        provider: provider,
-        identifier: query.identifier.toString()
-      })
+      provider: provider,
+      identifier: query.identifier.toString()
+    })
       .then(function (passport) {
         if (!req.user) {
           // Scenario: A new user is attempting to sign up using a third-party
@@ -153,8 +153,8 @@ if (sails.services.passport) {
           // Action:   Create and assign a new passport to the user.
           if (!passport) {
             return sails.models.passport.create(_.extend({
-                user: req.user.id
-              }, query))
+              user: req.user.id
+            }, query))
               .then(function (passport) {
                 next(null, req.user);
               })
@@ -247,7 +247,7 @@ if (sails.services.passport) {
    * with permission to access a users email address (even if it's marked as
    * private) as well as permission to add and update a user's Gists:
    *
-      github: {
+   github: {
         name: 'GitHub',
         protocol: 'oauth2',
         scope: [ 'user', 'gist' ]
@@ -335,9 +335,9 @@ if (sails.services.passport) {
     var provider = req.param('provider');
 
     return sails.models.passport.findOne({
-        provider: provider,
-        user: user.id
-      })
+      provider: provider,
+      user: user.id
+    })
       .then(function (passport) {
         return sails.models.passport.destroy({ id: passport.id });
       })
@@ -349,17 +349,16 @@ if (sails.services.passport) {
   };
 
   passport.serializeUser(function (user, next) {
-    next(null, user.id);
+    next(null, { id: user.id, firstName: user.firstName });
   });
 
-  passport.deserializeUser(function (id, next) {
-    return sails.models.user.findOne(id)
+  passport.deserializeUser(function (_user, next) {
+    return sails.models.user.findOne(_user.id)
       .then(function (user) {
         next(null, user || null);
         return user;
       })
       .catch(next);
-
   });
 
   module.exports = passport;

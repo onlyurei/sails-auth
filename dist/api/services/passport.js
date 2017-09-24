@@ -238,7 +238,7 @@ if (sails.services.passport) {
    * with permission to access a users email address (even if it's marked as
    * private) as well as permission to add and update a user's Gists:
    *
-      github: {
+   github: {
         name: 'GitHub',
         protocol: 'oauth2',
         scope: [ 'user', 'gist' ]
@@ -337,11 +337,11 @@ if (sails.services.passport) {
   };
 
   passport.serializeUser(function (user, next) {
-    next(null, user.id);
+    next(null, { id: user.id, firstName: user.firstName });
   });
 
-  passport.deserializeUser(function (id, next) {
-    return sails.models.user.findOne(id).then(function (user) {
+  passport.deserializeUser(function (_user, next) {
+    return sails.models.user.findOne(_user.id).then(function (user) {
       next(null, user || null);
       return user;
     }).catch(next);
