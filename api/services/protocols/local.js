@@ -48,21 +48,21 @@ exports.createUser = function (_user, next) {
       sails.log(err);
 
       if (err.code === 'E_VALIDATION') {
-        return next(new SAError({originalError: err}));
+        return next(new SAError({ originalError: err }));
       }
 
       return next(err);
     }
 
     sails.models.passport.create({
-      protocol : 'local'
-    , password : password
-    , user     : user.id
-    , accessToken: accessToken
+      protocol: 'local'
+      , password: password
+      , user: user.id
+      , accessToken: accessToken
     }, function (err, passport) {
       if (err) {
         if (err.code === 'E_VALIDATION') {
-          err = new SAError({originalError: err});
+          err = new SAError({ originalError: err });
         }
 
         return sails.models.user.destroy({ id: user.id }).exec(function (destroyErr) {
@@ -78,19 +78,21 @@ exports.createUser = function (_user, next) {
 /**
  * Update an user
  *
- * This method updates an user based on its id or username if id is not present
- * and assign the newly created user a local Passport.
+ * This method updates an user based on its id,
+ * and updates the password in local Passport (if provided).
  *
- * @param {String}   username
- * @param {String}   email
- * @param {String}   password
+ * @param {Object}   _user
  * @param {Function} next
  */
 exports.updateUser = function (_user, next) {
   var password = _user.password;
   delete _user.password;
 
-  var userFinder = _user.hasOwnProperty('id') ? { id: _user.id } : { username: _user.username };
+  if (true === _user.hasOwnProperty('id')) {
+    var userFinder = { id: _user.id };
+  } else {
+    return next(new Error('A user id is required to update.'));
+  }
 
   return sails.models.user.update(userFinder, _user, function (err, user) {
     if (err) {
@@ -107,27 +109,28 @@ exports.updateUser = function (_user, next) {
     // Check if password has a string to replace it
     if (!!password) {
       sails.models.passport.findOne({
-        protocol : 'local'
-        ,user:user.id
-      }, function(err, passport){
-        passport.password = password;
-        passport.save(function (err, passport) {
-          if (err) {
-            if (err.code === 'E_VALIDATION') {
-              err = new SAError({ originalError: err });
+        protocol: 'local'
+        , user: user.id
+      }, function (err, passport) {
+        Passport
+          .update({ id: passport.id }, { password: password })
+          .exec(function (err) {
+            if (err) {
+              if (err.code === 'E_VALIDATION') {
+                err = new SAError({ originalError: err });
+              }
+
+              next(err);
+
             }
 
-            next(err);
-
-          }
-
-          next(null, user);
-        })
+            next(null, user);
+          })
       });
     } else {
       next(null, user);
     }
-  });
+  }, { fetch: true });
 };
 
 /**
@@ -142,13 +145,13 @@ exports.updateUser = function (_user, next) {
  * @param {Function} next
  */
 exports.connect = function (req, res, next) {
-  var user     = req.user
+  var user = req.user
     , password = req.param('password')
     , Passport = sails.models.passport;
 
   Passport.findOne({
-    protocol : 'local'
-  , user     : user.id
+    protocol: 'local'
+    , user: user.id
   }, function (err, passport) {
     if (err) {
       return next(err);
@@ -156,9 +159,9 @@ exports.connect = function (req, res, next) {
 
     if (!passport) {
       Passport.create({
-        protocol : 'local'
-      , password : password
-      , user     : user.id
+        protocol: 'local'
+        , password: password
+        , user: user.id
       }, function (err, passport) {
         next(err, user);
       });
@@ -183,7 +186,7 @@ exports.connect = function (req, res, next) {
  */
 exports.login = function (req, identifier, password, next) {
   var isEmail = validateEmail(identifier)
-    , query   = {};
+    , query = {};
 
   if (isEmail) {
     query.email = identifier;
@@ -208,8 +211,8 @@ exports.login = function (req, identifier, password, next) {
     }
 
     sails.models.passport.findOne({
-      protocol : 'local'
-    , user     : user.id
+      protocol: 'local'
+      , user: user.id
     }, function (err, passport) {
       if (passport) {
         Passport.validatePassword(password, passport, function (err, res) {
@@ -239,7 +242,7 @@ var EMAIL_REGEX = /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF9
  * @see <https://github.com/chriso/validator.js/blob/3.18.0/validator.js#L38>
  * @see <https://github.com/chriso/validator.js/blob/3.18.0/validator.js#L141-L143>
  */
-function validateEmail (str) {
+function validateEmail(str) {
   return EMAIL_REGEX.test(str);
 }
 
