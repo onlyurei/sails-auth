@@ -120,7 +120,7 @@ exports.updateUser = function (_user, next) {
                 err = new SAError({ originalError: err });
               }
 
-              next(err);
+              return next(err);
 
             }
 
